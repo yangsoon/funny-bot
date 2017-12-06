@@ -40,3 +40,5 @@ class FunnyPhoto:
 
 if __name__ == "__main__":
     bot = FunnyPhoto()
+    bot.updater.start_polling()
+    bot.updater.idle()
