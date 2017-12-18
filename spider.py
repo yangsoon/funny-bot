@@ -1,7 +1,6 @@
 # -*- coding : utf-8 -*-
 import re
 import requests
-import tornado
 from bs4 import BeautifulSoup
 
 root_url = 'http://www.gamersky.com'

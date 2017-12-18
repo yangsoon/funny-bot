@@ -33,7 +33,7 @@ def start(bot, update):
     response = u'''
     欢迎使用FunnyPhoto，我是游民星空趣图非官方机器人，
     输入 /FunnyGif 获取动态趣图列表
-    输入 /FunnyPhoto 获取内涵囧途
+    输入 /FunnyPhoto 获取内涵囧图
     轻松一刻、冷知识、美女、福利图还在开发中...
     '''
     update.message.reply_text(text=response)
