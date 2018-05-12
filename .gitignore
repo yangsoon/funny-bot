@@ -1,4 +1,4 @@
-*.conf
+token.json
 .idea
 *.pyc
 .vscode/
