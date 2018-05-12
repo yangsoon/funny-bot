@@ -1,39 +1,13 @@
-import aiohttp
 import json
 from aiotg import Bot, Chat
-from spider import fecth_lists
+from util import format_message
+
 
 with open('token.json') as t, open('category.json') as c:
     token = json.loads(t.read())
     category = json.loads(c.read())
   
 bot = Bot(**token)
-
-@bot.command(r".*?\((.*?)\)")
-async def async_fecth(chat: Chat, match):
-    req_name = match.group(1)
-    try:
-        url = category[req_name]
-    except KeyError:
-        await chat.send_text("没有相应类型的图片，请重新输入")
-    mark = 'G' if req_name == "dynamic" else 'P'
-    results = await fecth_lists(url)
-    text = ""
-    for index, item in enumerate(results):
-        text += "%02d" % (index + 1) + '.' + item['title'] + \
-        ' /' + mark + item['date'] + '_' + item['key'] + '\n'
-    ikmarkup = {
-        'type': 'InlineKeyboardMarkup',
-        'inline_keyboard': [
-            [{'type': 'InlineKeyboardButton',
-              'text': '第1页',
-              'callback_data': ''},
-             {'type': 'InlineKeyboardButton',
-              'text': '下一页',
-              'callback_data': 'page-' + req_name + '-2'}]
-            ]
-        }
-    await chat.send_text(text, reply_makeup=json.dumps(ikmarkup))
 
 
 @bot.command(r"/lists")
@@ -51,17 +25,34 @@ async def list_category(chat: Chat, match):
     await chat.send_text(text="请选择你喜欢的图片类型", reply_markup=json.dumps(keyboard))
 
 
-@bot.callback(r'page-(\w+)')
-async def buttonclick(chat, cq, match):
-    await chat.edit_text(message_id=chat.message['message_id'], text="消息被修改了")
+@bot.command(r".*?\((?P<name>.*?)\)")
+async def get_lists(chat: Chat, match):
+    req_name = match.group('name')
+    try:
+        url = category[req_name]
+    except KeyError:
+        await chat.send_text("没有相应类型的图片，请重新输入")
+    text, markup = await format_message(req_name, url, 1)
+    await chat.send_text(text, reply_markup=json.dumps(markup))
+
+
+@bot.callback(r'page-(?P<name>\w+)-(?P<page>\d+)')
+async def change_lists(chat: Chat, cq, match):
+    req_name = match.group('name')
+    page = match.group('page')
+    url = category[req_name]
+    text, markup = await format_message(req_name, url, page)
+    await chat.edit_text(message_id=chat.message['message_id'], text=text, markup=markup)
+
 
 @bot.inline
-async def inlinemode(iq):
+async def inline_mode(iq):
+    desc = category['desc']
     results = [{
             'type': 'article',
             'id': str(index),
-            'title': article['title'],
-            'input_message_content': { 'message_text': article['title']},
-            'description': f"这里是{article['title']}"
-        } for index, article in enumerate(category)]
+            'title': name,
+            'input_message_content': { 'message_text': name},
+            'description': desc[index]
+        } for index, name in enumerate(category['name'])]
     await iq.answer(results)
