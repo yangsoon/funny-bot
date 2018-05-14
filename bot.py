@@ -1,7 +1,7 @@
 import json
 from aiotg import Bot, Chat
-from util import format_message
-
+from util import format_message, match_category
+from spider import fetch_lists
 
 with open('token.json') as t, open('category.json') as c:
     token = json.loads(t.read())
@@ -36,7 +36,7 @@ async def get_lists(chat: Chat, match):
     await chat.send_text(text, reply_markup=json.dumps(markup))
 
 
-@bot.callback(r'page-(?P<name>\w+)-(?P<page>\d+)')
+@bot.callback(r"page-(?P<name>\w+)-(?P<page>\d+)")
 async def change_lists(chat: Chat, cq, match):
     req_name = match.group('name')
     page = match.group('page')
@@ -46,13 +46,33 @@ async def change_lists(chat: Chat, cq, match):
 
 
 @bot.inline
-async def inline_mode(iq):
+async def inline_default(iq):
     desc = category['desc']
     results = [{
             'type': 'article',
             'id': str(index),
             'title': name,
-            'input_message_content': { 'message_text': name},
+            'input_message_content': {'message_text': name},
             'description': desc[index]
         } for index, name in enumerate(category['name'])]
     await iq.answer(results)
+
+
+@bot.inline(r"([\u4e00-\u9fa5]+)")
+async def test(iq, match):
+    req = match.group(1)
+    if req is None:
+        return
+    req_name = match_category(req.strip(), category['name'])
+    ptype = 'G' if req_name == "dynamic" else 'P'
+    results, _ = await fetch_lists(category[req_name])
+    c_results = [{
+            'type': 'article',
+            'id': str(index),
+            'title': item['title'],
+            'input_message_content': {
+                'message_text': '/' + ptype + item['date'] + '_' + item['key']
+            },
+            'description': item['desc']
+        } for index, item in enumerate(results)]
+    await iq.answer(c_results)

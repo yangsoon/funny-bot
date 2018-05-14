@@ -1,4 +1,7 @@
+import re
 from spider import fetch_lists
+
+c_patt = re.compile('.*?\((?P<name>.*?)\)')
 
 
 def inline_markup(req_name, page, end=False):
@@ -52,3 +55,11 @@ async def format_message(req_name, url, page):
     text = format_text(results, ptype)
     markup = inline_markup(req_name, page, end)
     return text, markup
+
+
+def match_category(req, name):
+    patt = re.compile(req+".*?")
+    for item in name:
+        if patt.match(item):
+            return c_patt.search(item).groups('name')[0]
+    return None

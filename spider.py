@@ -21,7 +21,8 @@ async def fetch_lists(url):
             results.append({
                 'title': item.a['title'],
                 'date': match.group('date'),
-                'key': match.group('key')
+                'key': match.group('key'),
+                'desc': item.find(class_="txt").string
             })
         try:
             nexe = content.find(class_='p1 nexe')['href']
