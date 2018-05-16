@@ -1,13 +1,15 @@
 import json
+import asyncio
 from aiotg import Bot, Chat
 from util import format_message, match_category
-from spider import fetch_lists
+from spider import fetch_lists, fetch_img
 
 with open('token.json') as t, open('category.json') as c:
     token = json.loads(t.read())
     category = json.loads(c.read())
   
 bot = Bot(**token)
+root_url = "http://www.gamersky.com/ent/"
 
 
 @bot.command(r"/lists")
@@ -59,20 +61,33 @@ async def inline_default(iq):
 
 
 @bot.inline(r"([\u4e00-\u9fa5]+)")
-async def test(iq, match):
+async def inline_name(iq, match):
     req = match.group(1)
-    if req is None:
-        return
     req_name = match_category(req.strip(), category['name'])
-    ptype = 'G' if req_name == "dynamic" else 'P'
+    if req_name is None:
+        return
     results, _ = await fetch_lists(category[req_name])
     c_results = [{
             'type': 'article',
             'id': str(index),
             'title': item['title'],
             'input_message_content': {
-                'message_text': '/' + ptype + item['date'] + '_' + item['key']
+                'message_text': '/P' + item['date'] + '_' + item['key']
             },
             'description': item['desc']
         } for index, item in enumerate(results)]
     await iq.answer(c_results)
+
+
+@bot.command(r"/P(?P<date>\d+)_(?P<key>\d+)")
+async def get_img(chat: Chat, match):
+    # date = match.group('date')
+    # key = match.group('key')
+    # url = root_url + date + '/' + key + '.shtml'
+    # results = await fetch_img(url)
+    # tasks = (chat.send_document(document=img['src'], caption=img['desc']) for img in results)
+    # await asyncio.gather(*tasks)
+    # with open("./imgs/test.gif", "rb") as f:
+    #     doc_id  = await chat.send_document(f)
+    #     print("doc_id=".format(doc_id))
+    await chat.send_document(document='CgADBQADGAADH27gV-4mqdF3JjbOAg')
