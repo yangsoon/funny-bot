@@ -1,5 +1,6 @@
 import re
 import aiohttp
+from aiohttp.client_exceptions import InvalidURL
 from bs4 import BeautifulSoup
 
 patt_url = re.compile('www.gamersky.com/(ent|wenku|news)/(?P<date>.*?)/(?P<key>.*?)\.shtml')
@@ -36,31 +37,30 @@ def filter_img(tag):
     try:
         if tag.attrs['align'] == 'center':
             for child in tag.contents:
-                if child.name == 'img':
+                if child.name == 'img' or child.name == 'a':
                     return True
         else:
             return False
     except KeyError:
-        return False
+        if 'style' in tag.attrs:
+            return True
+        else:
+            return False
 
 
 async def fetch_img(url):
+    print(url)
     async with aioget(url) as resp:
+        print(f'{resp.url}..............')
         resp_text = await resp.text()
         content = BeautifulSoup(resp_text, "html.parser")
-        imgs = content.find(class_="Mid2L_con").findAll(filter_img)
+        c = content.find(class_="Mid2L_con")
+        imgs = c.findAll(filter_img)
         results = []
         for img in imgs:
             results.append({
                 'src':  img.find('img').attrs['src'],
                 'desc': '\n'.join(list(img.stripped_strings))
             })
+        print(results)
         return results
-
-
-async def download_img(url):
-    pass
-
-
-async def download_imgs():
-    pass

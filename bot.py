@@ -1,7 +1,8 @@
 import json
-import asyncio
+import aioredis
+from aiohttp.client_exceptions import InvalidURL
 from aiotg import Bot, Chat
-from util import format_message, match_category
+from util import format_message, match_category, download_gifs, download_photo
 from spider import fetch_lists, fetch_img
 
 with open('token.json') as t, open('category.json') as c:
@@ -64,6 +65,7 @@ async def inline_default(iq):
 async def inline_name(iq, match):
     req = match.group(1)
     req_name = match_category(req.strip(), category['name'])
+    ptype = 'G' if req_name == "dynamic" else 'P'
     if req_name is None:
         return
     results, _ = await fetch_lists(category[req_name])
@@ -72,22 +74,57 @@ async def inline_name(iq, match):
             'id': str(index),
             'title': item['title'],
             'input_message_content': {
-                'message_text': '/P' + item['date'] + '_' + item['key']
+                'message_text': '/' + ptype + item['date'] + '_' + item['key']
             },
             'description': item['desc']
         } for index, item in enumerate(results)]
     await iq.answer(c_results)
 
 
-@bot.command(r"/P(?P<date>\d+)_(?P<key>\d+)")
+@bot.command(r"/G(?P<date>\d+)_(?P<key>\d+)")
 async def get_img(chat: Chat, match):
-    # date = match.group('date')
-    # key = match.group('key')
-    # url = root_url + date + '/' + key + '.shtml'
-    # results = await fetch_img(url)
-    # tasks = (chat.send_document(document=img['src'], caption=img['desc']) for img in results)
-    # await asyncio.gather(*tasks)
-    # with open("./imgs/test.gif", "rb") as f:
-    #     doc_id  = await chat.send_document(f)
-    #     print("doc_id=".format(doc_id))
-    await chat.send_document(document='CgADBQADGAADH27gV-4mqdF3JjbOAg')
+    date = match.group('date')
+    key = match.group('key')
+    url = root_url + date + '/' + key + '.shtml'
+    results = await fetch_img(url)
+    await download_gifs(chat, results)
+
+
+@bot.command(r"/P(?P<date>\d+)_(?P<key>\d+)")
+async def get_photo(chat: Chat, match):
+    date, key = match.group('date'), match.group('key')
+    url = root_url + date + '/' + key + '.shtml'
+    try:
+        results = await fetch_img(url)
+    except InvalidURL as e:
+        print(e.url())
+    file_id = await download_photo(chat, results)
+    markup = {
+        'type': 'InlineKeyboardMarkup',
+        'inline_keyboard': [[{
+            'type': 'InlineKeyboardButton',
+            'text': '下一页(第2页)',
+            'callback_data': 'photo-' + date + '-' + key + '-2'
+        }]]
+    }
+    await chat.send_text(text="点击按钮查看下一页", reply_markup=json.dumps(markup))
+
+
+@bot.callback(r"photo-(?P<date>\d+)-(?P<key>\d+)-(?P<page>\d+)")
+async def change_photo(chat: Chat, cq, match):
+    date, key, page = match.group('date'), match.group('key'), match.group('page')
+    url = root_url + date + '/' + key + '_' + page + '.shtml'
+    try:
+        results = await fetch_img(url)
+    except InvalidURL as e:
+        print(e.url())
+    file_id = await download_photo(chat, results)
+    markup = {
+        'type': 'InlineKeyboardMarkup',
+        'inline_keyboard': [[{
+            'type': 'InlineKeyboardButton',
+            'text': '下一页(第' + str(int(page)+1) +'页)',
+            'callback_data': 'photo-' + date + '-' + key + '-' + str(int(page)+1)
+        }]]
+    }
+    await chat.send_text(text="点击按钮查看下一页", reply_markup=json.dumps(markup))

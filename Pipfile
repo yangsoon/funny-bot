@@ -8,6 +8,7 @@ aiohttp = "*"
 "beautifulsoup4" = "*"
 aiotg = "*"
 aioredis = "*"
+pillow = "*"
 
 [dev-packages]
 

@@ -1,5 +1,9 @@
 import re
-from spider import fetch_lists
+import asyncio
+from aiotg import BotApiError
+from io import BytesIO
+from spider import aioget, fetch_lists
+from PIL import Image
 
 c_patt = re.compile('.*?\((?P<name>.*?)\)')
 
@@ -39,19 +43,20 @@ def format_url(req_name, base, page):
         return base + 'List_' + str(page) + '.html'
 
 
-def format_text(results):
+def format_text(results, ptype):
     text = ""
     for index, item in enumerate(results):
         text += "%02d" % (index + 1) + '.' + item['title'] + \
-            ' /P' + item['date'] + '_' + item['key'] + '\n'
+            ' /' + ptype + item['date'] + '_' + item['key'] + '\n'
     return text
 
 
 async def format_message(req_name, url, page):
+    ptype = 'G' if req_name == "dynamic" else 'P'
     url = format_url(req_name, url, page)
     results, nexe = await fetch_lists(url)
     end = True if nexe is None else False
-    text = format_text(results)
+    text = format_text(results, ptype)
     markup = inline_markup(req_name, page, end)
     return text, markup
 
@@ -62,3 +67,34 @@ def match_category(req, name):
         if patt.match(item):
             return c_patt.search(item).groups('name')[0]
     return None
+
+
+async def download_gif(chat, img):
+    async with aioget(img['src']) as resp:
+        r = await resp.read()
+        img_raw = BytesIO(r)
+        im = Image.open(img_raw)
+        gif = BytesIO()
+        im.save(gif, "gif")
+        await chat.send_document(gif.getvalue())
+
+
+async def download_gifs(chat, imgs):
+    tasks = (download_gif(chat, img) for img in imgs)
+    await asyncio.gather(*tasks)
+
+
+async def download_one(chat, img):
+    async with aioget(img['src']) as resp:
+        r = await resp.read()
+        img_raw = BytesIO(r)
+        try:
+            message = await chat.send_photo(photo=img_raw.read(), caption=img['desc'])
+        except BotApiError as error:
+            print(error.response)
+        return message['result']['photo']
+
+
+async def download_photo(chat, imgs):
+    tasks = (download_one(chat, img) for img in imgs)
+    return await asyncio.gather(*tasks)
