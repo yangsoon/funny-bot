@@ -1,6 +1,6 @@
 # funny-bot
 telegram bot fetch photo from gamersky
-使用方法
+## 使用方法
 ```
 clone项目后，安装pipenv(python3)
 在项目中执行 pipenv sync
