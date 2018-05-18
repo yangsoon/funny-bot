@@ -1,6 +1,5 @@
 import re
 import aiohttp
-from aiohttp.client_exceptions import InvalidURL
 from bs4 import BeautifulSoup
 
 patt_url = re.compile('www.gamersky.com/(ent|wenku|news)/(?P<date>.*?)/(?P<key>.*?)\.shtml')
@@ -13,7 +12,7 @@ def aioget(url):
 async def fetch_lists(url):
     async with aioget(url) as resp:
         resp_text = await resp.text()
-        content = BeautifulSoup(resp_text, "html.parser")
+        content = BeautifulSoup(resp_text, "lxml")
         target_lists = content.find(class_="pictxt").find_all("li")
         results = []
         for item in target_lists:
@@ -49,18 +48,17 @@ def filter_img(tag):
 
 
 async def fetch_img(url):
-    print(url)
     async with aioget(url) as resp:
-        print(f'{resp.url}..............')
         resp_text = await resp.text()
-        content = BeautifulSoup(resp_text, "html.parser")
-        c = content.find(class_="Mid2L_con")
-        imgs = c.findAll(filter_img)
+        content = BeautifulSoup(resp_text, "lxml")
+        imgs = content.find(class_="Mid2L_con").findAll(filter_img)
         results = []
         for img in imgs:
-            results.append({
-                'src':  img.find('img').attrs['src'],
-                'desc': '\n'.join(list(img.stripped_strings))
-            })
-        print(results)
+            try:
+                results.append({
+                    'src':  img.find('img').attrs['src'],
+                    'desc': '\n'.join(list(img.stripped_strings))
+                })
+            except AttributeError:
+                continue
         return results

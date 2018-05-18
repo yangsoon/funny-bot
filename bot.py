@@ -1,7 +1,6 @@
 import json
 import aioredis
-from aiohttp.client_exceptions import InvalidURL
-from aiotg import Bot, Chat
+from aiotg import Bot, Chat, CallbackQuery
 from util import format_message, match_category, download_gifs, download_photo
 from spider import fetch_lists, fetch_img
 
@@ -13,7 +12,7 @@ bot = Bot(**token)
 root_url = "http://www.gamersky.com/ent/"
 
 
-@bot.command(r"/lists")
+@bot.command(r"/start")
 async def list_category(chat: Chat, match):
     kb, row = [], -1
     for idx, item in enumerate(category["name"]):
@@ -94,10 +93,7 @@ async def get_img(chat: Chat, match):
 async def get_photo(chat: Chat, match):
     date, key = match.group('date'), match.group('key')
     url = root_url + date + '/' + key + '.shtml'
-    try:
-        results = await fetch_img(url)
-    except InvalidURL as e:
-        print(e.url())
+    results = await fetch_img(url)
     file_id = await download_photo(chat, results)
     markup = {
         'type': 'InlineKeyboardMarkup',
@@ -107,24 +103,34 @@ async def get_photo(chat: Chat, match):
             'callback_data': 'photo-' + date + '-' + key + '-2'
         }]]
     }
-    await chat.send_text(text="点击按钮查看下一页", reply_markup=json.dumps(markup))
+    markup['inline_keyboard'].insert(0, [{
+        'type': 'InlineKeyboardButton',
+        'text': url,
+        'url': url,
+        'callback_data': ' '
+    }])
+    await chat.send_text(text="点击按钮查看下一页, 或者点击原网址查看详细内容", reply_markup=json.dumps(markup))
 
 
 @bot.callback(r"photo-(?P<date>\d+)-(?P<key>\d+)-(?P<page>\d+)")
-async def change_photo(chat: Chat, cq, match):
+async def change_photo(chat: Chat, cq: CallbackQuery, match):
     date, key, page = match.group('date'), match.group('key'), match.group('page')
     url = root_url + date + '/' + key + '_' + page + '.shtml'
-    try:
-        results = await fetch_img(url)
-    except InvalidURL as e:
-        print(e.url())
+    results = await fetch_img(url)
     file_id = await download_photo(chat, results)
+    text = '下一页(第' + str(int(page)+1) + '页)'
     markup = {
         'type': 'InlineKeyboardMarkup',
         'inline_keyboard': [[{
             'type': 'InlineKeyboardButton',
-            'text': '下一页(第' + str(int(page)+1) +'页)',
+            'text': text,
             'callback_data': 'photo-' + date + '-' + key + '-' + str(int(page)+1)
         }]]
     }
-    await chat.send_text(text="点击按钮查看下一页", reply_markup=json.dumps(markup))
+    markup['inline_keyboard'].insert(0, [{
+        'type': 'InlineKeyboardButton',
+        'text': url,
+        'url': url,
+        'callback_data': ' '
+    }])
+    await chat.send_text(text="点击按钮查看下一页, 或者点击原网址查看详细内容", reply_markup=json.dumps(markup))

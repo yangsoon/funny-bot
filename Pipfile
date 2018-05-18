@@ -9,6 +9,7 @@ aiohttp = "*"
 aiotg = "*"
 aioredis = "*"
 pillow = "*"
+lxml = "*"
 
 [dev-packages]
 
