@@ -39,7 +39,8 @@ async def get_lists(chat: Chat, match):
 
 
 @bot.callback(r"page-(?P<name>\w+)-(?P<page>\d+)")
-async def change_lists(chat: Chat, cq, match):
+async def change_lists(chat: Chat, cq: CallbackQuery, match):
+    await cq.answer(text="列表更新中....")
     req_name = match.group('name')
     page = match.group('page')
     url = category[req_name]
@@ -80,13 +81,13 @@ async def inline_name(iq, match):
     await iq.answer(c_results)
 
 
-@bot.command(r"/G(?P<date>\d+)_(?P<key>\d+)")
-async def get_img(chat: Chat, match):
-    date = match.group('date')
-    key = match.group('key')
-    url = root_url + date + '/' + key + '.shtml'
-    results = await fetch_img(url)
-    await download_gifs(chat, results)
+# @bot.command(r"/G(?P<date>\d+)_(?P<key>\d+)")
+# async def get_img(chat: Chat, match):
+#     date = match.group('date')
+#     key = match.group('key')
+#     url = root_url + date + '/' + key + '.shtml'
+#     results = await fetch_img(url)
+#     await download_gifs(chat, results)
 
 
 @bot.command(r"/P(?P<date>\d+)_(?P<key>\d+)")
@@ -114,6 +115,7 @@ async def get_photo(chat: Chat, match):
 
 @bot.callback(r"photo-(?P<date>\d+)-(?P<key>\d+)-(?P<page>\d+)")
 async def change_photo(chat: Chat, cq: CallbackQuery, match):
+    await cq.answer(text="图片加载中....")
     date, key, page = match.group('date'), match.group('key'), match.group('page')
     url = root_url + date + '/' + key + '_' + page + '.shtml'
     results = await fetch_img(url)
