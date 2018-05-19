@@ -1,8 +1,7 @@
 import json
-import aioredis
 from aiotg import Bot, Chat, CallbackQuery
 from util import format_message, match_category, \
-    download_gifs, download_photo, photo_inline_markup
+    download_gifs, produce_imgs
 from spider import fetch_lists, fetch_img
 
 with open('token.json') as t, open('category.json') as c:
@@ -66,9 +65,9 @@ async def inline_default(iq):
 async def inline_name(iq, match):
     req = match.group(1)
     req_name = match_category(req.strip(), category['name'])
-    ptype = 'G' if req_name == "dynamic" else 'P'
     if req_name is None:
         return
+    ptype = 'G' if req_name == "dynamic" else 'P'
     results, _ = await fetch_lists(category[req_name])
     c_results = [{
         'type': 'article',
@@ -86,8 +85,6 @@ async def inline_name(iq, match):
 async def get_gif(chat: Chat, match):
     date, key = match.group('date'), match.group('key')
     url = root_url + date + '/' + key + '.shtml'
-    results, _ = await fetch_img(url)
-    await download_gifs(chat, results)
     markup = {
         'type': 'InlineKeyboardMarkup',
         'inline_keyboard': [[{
@@ -102,18 +99,16 @@ async def get_gif(chat: Chat, match):
             'callback_data': ' '
         }]]
     }
-    text = "抱歉,动态图在优化中,如果你有好的想法,可以在github上提出issue"
+    text = "抱歉,动态图在优化中,如果你有好的想法,欢迎在github上提出issue"
     await chat.send_text(text=text, reply_markup=json.dumps(markup))
+    results, _ = await fetch_img(url)
+    await download_gifs(chat, results)
 
 
 @bot.command(r"/P(?P<date>\d+)_(?P<key>\d+)")
 async def get_photo(chat: Chat, match):
     date, key = match.group('date'), match.group('key')
-    url = root_url + date + '/' + key + '.shtml'
-    results, _ = await fetch_img(url)
-    file_id = await download_photo(chat, results)
-    text = '下一页(第2页)'
-    markup = photo_inline_markup(date, key, text, url, '2')
+    markup = await produce_imgs(chat, date, key, '1')
     await chat.send_text(text=help_tetx, reply_markup=json.dumps(markup))
 
 
@@ -122,14 +117,5 @@ async def change_photo(chat: Chat, cq: CallbackQuery, match):
     await cq.answer(text="图片加载中....")
     date, key, page = match.group('date'), match.group(
         'key'), match.group('page')
-    url = root_url + date + '/' + key + '_' + page + '.shtml'
-    results, nexe = await fetch_img(url)
-    file_id = await download_photo(chat, results)
-    if nexe:
-        text = '下一页(第' + str(int(page) + 1) + '页)'
-        page = str(int(page) + 1)
-    else:
-        text = "您已全部看完"
-        page = None
-    markup = photo_inline_markup(date, key, text, url, page)
+    markup = await produce_imgs(chat, date, key, page)
     await chat.send_text(text=help_tetx, reply_markup=json.dumps(markup))

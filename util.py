@@ -1,11 +1,19 @@
 import re
+import logging
 import asyncio
-from aiotg import BotApiError
+import aioredis
 from io import BytesIO
-from spider import aioget, fetch_lists
-from PIL import Image
+from aiotg import BotApiError
+from spider import aioget, fetch_lists, fetch_img
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s: %(message)s',
+    datefmt='%Y-%m-%d %A %H:%M:%S')
 
 c_patt = re.compile('.*?\((?P<name>.*?)\)')
+root_url = "http://www.gamersky.com/ent/"
 
 
 def lists_inline_markup(req_name, page, end=False):
@@ -77,6 +85,7 @@ def format_text(results, ptype):
 
 
 async def format_message(req_name, url, page):
+    logging.info(f'fetch {req_name} lists from {url}')
     ptype = 'G' if req_name == "dynamic" else 'P'
     url = format_url(req_name, url, page)
     results, nexe = await fetch_lists(url)
@@ -95,12 +104,6 @@ def match_category(req, name):
 
 
 async def download_gif(chat, img):
-    # async with aioget(img['src']) as resp:
-    #     r = await resp.read()
-    #     img_raw = BytesIO(r)
-    #     im = Image.open(img_raw)
-    #     gif = BytesIO()
-    #     im.save(gif, "gif")
     await chat.send_document(document=img['src'], caption=img['desc'])
 
 
@@ -116,10 +119,50 @@ async def download_one(chat, img):
         try:
             message = await chat.send_photo(photo=img_raw.read(), caption=img['desc'])
         except BotApiError as error:
-            print(error.response)
-        return message['result']['photo']
+            logging.info(error.response)
+        return dict(file_ids=message['result']['photo'], desc=img['desc'])
 
 
 async def download_photo(chat, imgs):
     tasks = (download_one(chat, img) for img in imgs)
     return await asyncio.gather(*tasks)
+
+
+async def get_fileid(key, page):
+    conn = await aioredis.create_connection(('localhost', 6379))
+    return await conn.execute('hget', key, page)
+
+
+async def store_fileid(fileid, key, page, nexe):
+    conn = await aioredis.create_connection(('localhost', 6379))
+    img_page = dict(imgs=fileid, nexe=nexe)
+    await conn.execute('hset', key, page, str(img_page))
+    logging.info(f'{key}-{page} stored')
+
+
+async def produce_imgs(chat, date, key, page):
+    dbs = await get_fileid(date+key, page)
+    url = ''
+    if dbs:
+        logging.info(f'fetch {date+key}-{page} fileid from redis')
+        dbs = eval(dbs)
+        tasks = (chat.send_photo(photo=img['file_ids'][0]['file_id'], caption=img['desc']) for img in dbs['imgs'])
+        await asyncio.gather(*tasks)
+        nexe = dbs['nexe']
+    else:
+        if page == '1':
+            url = root_url + date + '/' + key + '.shtml'
+        else:
+            url = root_url + date + '/' + key + '_' + page + '.shtml'
+        logging.info(f'fetch imgs from {url}')
+        results, nexe = await fetch_img(url)
+        file_id = await download_photo(chat, results)
+        await store_fileid(file_id, date+key, page, nexe)
+    if nexe:
+        text = '下一页(第' + str(int(page) + 1) + '页)'
+        page = str(int(page) + 1)
+    else:
+        text = "您已全部看完"
+        page = None
+    markup = photo_inline_markup(date, key, text, url, page)
+    return markup
