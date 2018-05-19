@@ -42,12 +42,20 @@ def photo_inline_markup(date, key, text, url, page):
             'text': url,
             'url': url,
             'callback_data': ' '
-        }], [{
+        }]]
+    }
+    if page:
+        markup['inline_keyboard'].append([{
             'type': 'InlineKeyboardButton',
             'text': text,
             'callback_data': 'photo-' + date + '-' + key + '-' + page
-        }]]
-    }
+        }])
+    else:
+        markup['inline_keyboard'].append([{
+            'type': 'InlineKeyboardButton',
+            'text': text,
+            'callback_data': ' '
+        }])
     return markup
 
 

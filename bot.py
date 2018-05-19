@@ -43,8 +43,7 @@ async def get_lists(chat: Chat, match):
 @bot.callback(r"page-(?P<name>\w+)-(?P<page>\d+)")
 async def change_lists(chat: Chat, cq: CallbackQuery, match):
     await cq.answer(text="列表更新中....")
-    req_name = match.group('name')
-    page = match.group('page')
+    req_name, page = match.group('name'), match.group('page')
     url = category[req_name]
     text, markup = await format_message(req_name, url, page)
     await chat.edit_text(message_id=chat.message['message_id'], text=text, markup=markup)
@@ -96,7 +95,7 @@ async def inline_name(iq, match):
 async def get_photo(chat: Chat, match):
     date, key = match.group('date'), match.group('key')
     url = root_url + date + '/' + key + '.shtml'
-    results = await fetch_img(url)
+    results, _ = await fetch_img(url)
     file_id = await download_photo(chat, results)
     text = '下一页(第2页)'
     markup = photo_inline_markup(date, key, text, url, '2')
@@ -109,8 +108,13 @@ async def change_photo(chat: Chat, cq: CallbackQuery, match):
     date, key, page = match.group('date'), match.group(
         'key'), match.group('page')
     url = root_url + date + '/' + key + '_' + page + '.shtml'
-    results = await fetch_img(url)
+    results, nexe = await fetch_img(url)
     file_id = await download_photo(chat, results)
-    text = '下一页(第' + str(int(page) + 1) + '页)'
-    markup = photo_inline_markup(date, key, text, url, str(int(page) + 1))
+    if nexe:
+        text = '下一页(第' + str(int(page) + 1) + '页)'
+        page = str(int(page) + 1)
+    else:
+        text = "您已全部看完"
+        page = None
+    markup = photo_inline_markup(date, key, text, url, page)
     await chat.send_text(text=help_tetx, reply_markup=json.dumps(markup))

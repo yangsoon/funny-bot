@@ -3,6 +3,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 
 patt_url = re.compile('www.gamersky.com/(ent|wenku|news)/(?P<date>.*?)/(?P<key>.*?)\.shtml')
+patt_next = re.compile(u'下一页')
 
 
 def aioget(url):
@@ -61,6 +62,5 @@ async def fetch_img(url):
                 })
             except AttributeError:
                 continue
-        nexe = re.match('下一页', resp_text)
-        print(nexe)
-        return results
+        nexe = True if patt_next.search(resp_text) else False
+        return results, nexe
