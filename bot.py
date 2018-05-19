@@ -82,13 +82,28 @@ async def inline_name(iq, match):
     await iq.answer(c_results)
 
 
-# @bot.command(r"/G(?P<date>\d+)_(?P<key>\d+)")
-# async def get_img(chat: Chat, match):
-#     date = match.group('date')
-#     key = match.group('key')
-#     url = root_url + date + '/' + key + '.shtml'
-#     results = await fetch_img(url)
-#     await download_gifs(chat, results)
+@bot.command(r"/G(?P<date>\d+)_(?P<key>\d+)")
+async def get_gif(chat: Chat, match):
+    date, key = match.group('date'), match.group('key')
+    url = root_url + date + '/' + key + '.shtml'
+    results, _ = await fetch_img(url)
+    await download_gifs(chat, results)
+    markup = {
+        'type': 'InlineKeyboardMarkup',
+        'inline_keyboard': [[{
+            'type': 'InlineKeyboardButton',
+            'text': "动态图原地址",
+            'url': url,
+            'callback_data': ' '
+        }], [{
+            'type': 'InlineKeyboardButton',
+            'text': "欢迎在github上提出建议",
+            'url': "https://github.com/yangsoon/funny-bot/issues",
+            'callback_data': ' '
+        }]]
+    }
+    text = "抱歉,动态图在优化中,如果你有好的想法,可以在github上提出issue"
+    await chat.send_text(text=text, reply_markup=json.dumps(markup))
 
 
 @bot.command(r"/P(?P<date>\d+)_(?P<key>\d+)")

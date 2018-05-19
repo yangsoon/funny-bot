@@ -95,13 +95,13 @@ def match_category(req, name):
 
 
 async def download_gif(chat, img):
-    async with aioget(img['src']) as resp:
-        r = await resp.read()
-        img_raw = BytesIO(r)
-        im = Image.open(img_raw)
-        gif = BytesIO()
-        im.save(gif, "gif")
-        await chat.send_document(gif.getvalue())
+    # async with aioget(img['src']) as resp:
+    #     r = await resp.read()
+    #     img_raw = BytesIO(r)
+    #     im = Image.open(img_raw)
+    #     gif = BytesIO()
+    #     im.save(gif, "gif")
+    await chat.send_document(document=img['src'], caption=img['desc'])
 
 
 async def download_gifs(chat, imgs):
