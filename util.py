@@ -39,16 +39,15 @@ def photo_inline_markup(date, key, text, url, page):
         'type': 'InlineKeyboardMarkup',
         'inline_keyboard': [[{
             'type': 'InlineKeyboardButton',
+            'text': url,
+            'url': url,
+            'callback_data': ' '
+        }], [{
+            'type': 'InlineKeyboardButton',
             'text': text,
             'callback_data': 'photo-' + date + '-' + key + '-' + page
         }]]
     }
-    markup['inline_keyboard'].insert(0, [{
-        'type': 'InlineKeyboardButton',
-        'text': url,
-        'url': url,
-        'callback_data': ' '
-    }])
     return markup
 
 
