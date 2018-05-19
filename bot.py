@@ -1,15 +1,17 @@
 import json
 import aioredis
 from aiotg import Bot, Chat, CallbackQuery
-from util import format_message, match_category, download_gifs, download_photo
+from util import format_message, match_category, \
+    download_gifs, download_photo, photo_inline_markup
 from spider import fetch_lists, fetch_img
 
 with open('token.json') as t, open('category.json') as c:
     token = json.loads(t.read())
     category = json.loads(c.read())
-  
+
 bot = Bot(**token)
 root_url = "http://www.gamersky.com/ent/"
+help_tetx = "点击按钮查看下一页, 或者点击原网址查看详细内容"
 
 
 @bot.command(r"/start")
@@ -52,12 +54,12 @@ async def change_lists(chat: Chat, cq: CallbackQuery, match):
 async def inline_default(iq):
     desc = category['desc']
     results = [{
-            'type': 'article',
-            'id': str(index),
-            'title': name,
-            'input_message_content': {'message_text': name},
-            'description': desc[index]
-        } for index, name in enumerate(category['name'])]
+        'type': 'article',
+        'id': str(index),
+        'title': name,
+        'input_message_content': {'message_text': name},
+        'description': desc[index]
+    } for index, name in enumerate(category['name'])]
     await iq.answer(results)
 
 
@@ -70,14 +72,14 @@ async def inline_name(iq, match):
         return
     results, _ = await fetch_lists(category[req_name])
     c_results = [{
-            'type': 'article',
-            'id': str(index),
-            'title': item['title'],
-            'input_message_content': {
+        'type': 'article',
+        'id': str(index),
+        'title': item['title'],
+        'input_message_content': {
                 'message_text': '/' + ptype + item['date'] + '_' + item['key']
-            },
-            'description': item['desc']
-        } for index, item in enumerate(results)]
+        },
+        'description': item['desc']
+    } for index, item in enumerate(results)]
     await iq.answer(c_results)
 
 
@@ -96,43 +98,19 @@ async def get_photo(chat: Chat, match):
     url = root_url + date + '/' + key + '.shtml'
     results = await fetch_img(url)
     file_id = await download_photo(chat, results)
-    markup = {
-        'type': 'InlineKeyboardMarkup',
-        'inline_keyboard': [[{
-            'type': 'InlineKeyboardButton',
-            'text': '下一页(第2页)',
-            'callback_data': 'photo-' + date + '-' + key + '-2'
-        }]]
-    }
-    markup['inline_keyboard'].insert(0, [{
-        'type': 'InlineKeyboardButton',
-        'text': url,
-        'url': url,
-        'callback_data': ' '
-    }])
-    await chat.send_text(text="点击按钮查看下一页, 或者点击原网址查看详细内容", reply_markup=json.dumps(markup))
+    text = '下一页(第2页)'
+    markup = photo_inline_markup(date, key, text, url, '2')
+    await chat.send_text(text=help_tetx, reply_markup=json.dumps(markup))
 
 
 @bot.callback(r"photo-(?P<date>\d+)-(?P<key>\d+)-(?P<page>\d+)")
 async def change_photo(chat: Chat, cq: CallbackQuery, match):
     await cq.answer(text="图片加载中....")
-    date, key, page = match.group('date'), match.group('key'), match.group('page')
+    date, key, page = match.group('date'), match.group(
+        'key'), match.group('page')
     url = root_url + date + '/' + key + '_' + page + '.shtml'
     results = await fetch_img(url)
     file_id = await download_photo(chat, results)
-    text = '下一页(第' + str(int(page)+1) + '页)'
-    markup = {
-        'type': 'InlineKeyboardMarkup',
-        'inline_keyboard': [[{
-            'type': 'InlineKeyboardButton',
-            'text': text,
-            'callback_data': 'photo-' + date + '-' + key + '-' + str(int(page)+1)
-        }]]
-    }
-    markup['inline_keyboard'].insert(0, [{
-        'type': 'InlineKeyboardButton',
-        'text': url,
-        'url': url,
-        'callback_data': ' '
-    }])
-    await chat.send_text(text="点击按钮查看下一页, 或者点击原网址查看详细内容", reply_markup=json.dumps(markup))
+    text = '下一页(第' + str(int(page) + 1) + '页)'
+    markup = photo_inline_markup(date, key, text, url, str(int(page) + 1))
+    await chat.send_text(text=help_tetx, reply_markup=json.dumps(markup))

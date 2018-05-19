@@ -8,7 +8,7 @@ from PIL import Image
 c_patt = re.compile('.*?\((?P<name>.*?)\)')
 
 
-def inline_markup(req_name, page, end=False):
+def lists_inline_markup(req_name, page, end=False):
     markup = {
         'type': 'InlineKeyboardMarkup',
         'inline_keyboard': [[]]
@@ -18,7 +18,7 @@ def inline_markup(req_name, page, end=False):
         markup['inline_keyboard'][0].append({
             'type': 'InlineKeyboardButton',
             'text': '<< 上一页',
-            'callback_data': 'page-' + req_name + '-' + str(page-1)
+            'callback_data': 'page-' + req_name + '-' + str(page - 1)
         })
     markup['inline_keyboard'][0].append({
         'type': 'InlineKeyboardButton',
@@ -29,8 +29,26 @@ def inline_markup(req_name, page, end=False):
         markup['inline_keyboard'][0].append({
             'type': 'InlineKeyboardButton',
             'text': '下一页 >>',
-            'callback_data': 'page-' + req_name + '-' + str(page + 1)      
+            'callback_data': 'page-' + req_name + '-' + str(page + 1)
         })
+    return markup
+
+
+def photo_inline_markup(date, key, text, url, page):
+    markup = {
+        'type': 'InlineKeyboardMarkup',
+        'inline_keyboard': [[{
+            'type': 'InlineKeyboardButton',
+            'text': text,
+            'callback_data': 'photo-' + date + '-' + key + '-' + page
+        }]]
+    }
+    markup['inline_keyboard'].insert(0, [{
+        'type': 'InlineKeyboardButton',
+        'text': url,
+        'url': url,
+        'callback_data': ' '
+    }])
     return markup
 
 
@@ -57,12 +75,12 @@ async def format_message(req_name, url, page):
     results, nexe = await fetch_lists(url)
     end = True if nexe is None else False
     text = format_text(results, ptype)
-    markup = inline_markup(req_name, page, end)
+    markup = lists_inline_markup(req_name, page, end)
     return text, markup
 
 
 def match_category(req, name):
-    patt = re.compile(req+".*?")
+    patt = re.compile(req + ".*?")
     for item in name:
         if patt.match(item):
             return c_patt.search(item).groups('name')[0]
