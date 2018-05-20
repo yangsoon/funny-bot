@@ -149,7 +149,10 @@ async def log_users(message):
 
 async def produce_imgs(chat, date, key, page):
     dbs = await get_fileid(date+key, page)
-    url = ''
+    if page == '1':
+        url = root_url + date + '/' + key + '.shtml'
+    else:
+        url = root_url + date + '/' + key + '_' + page + '.shtml'
     if dbs:
         logging.info(f'fetch {date+key}-{page} fileid from redis')
         dbs = eval(dbs)
@@ -157,10 +160,6 @@ async def produce_imgs(chat, date, key, page):
         await asyncio.gather(*tasks)
         nexe = dbs['nexe']
     else:
-        if page == '1':
-            url = root_url + date + '/' + key + '.shtml'
-        else:
-            url = root_url + date + '/' + key + '_' + page + '.shtml'
         logging.info(f'fetch imgs from {url}')
         results, nexe = await fetch_img(url)
         file_id = await download_photo(chat, results)
