@@ -140,6 +140,13 @@ async def store_fileid(fileid, key, page, nexe):
     logging.info(f'{key}-{page} stored')
 
 
+async def log_users(message):
+    conn = await aioredis.create_connection(('localhost', 6379))
+    await conn.execute('sadd', 'users', str(message['result']['chat']))
+    number = await conn.execute('scard', 'users')
+    logging.info(f'add a new user! there are {number} users')
+
+
 async def produce_imgs(chat, date, key, page):
     dbs = await get_fileid(date+key, page)
     url = ''

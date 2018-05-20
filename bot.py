@@ -1,7 +1,7 @@
 import json
 from aiotg import Bot, Chat, CallbackQuery
 from util import format_message, match_category, \
-    download_gifs, produce_imgs
+    download_gifs, produce_imgs, log_users
 from spider import fetch_lists, fetch_img
 
 with open('token.json') as t, open('category.json') as c:
@@ -25,7 +25,8 @@ async def list_category(chat: Chat, match):
         "keyboard": kb,
         "resize_keyboard": True
     }
-    await chat.send_text(text="请选择你喜欢的图片类型", reply_markup=json.dumps(keyboard))
+    message = await chat.send_text(text="请选择你喜欢的图片类型", reply_markup=json.dumps(keyboard))
+    await log_users(message)
 
 
 @bot.command(r".*?\((?P<name>.*?)\)")
