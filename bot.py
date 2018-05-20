@@ -25,7 +25,8 @@ async def list_category(chat: Chat, match):
         "keyboard": kb,
         "resize_keyboard": True
     }
-    message = await chat.send_text(text="请选择你喜欢的图片类型", reply_markup=json.dumps(keyboard))
+    text = "请选择你喜欢的图片类型,动态图和冷知识还有bug,其他类型都能正常查看"
+    message = await chat.send_text(text=text, reply_markup=json.dumps(keyboard))
     await log_users(message)
 
 
