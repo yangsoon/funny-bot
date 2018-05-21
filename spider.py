@@ -39,8 +39,7 @@ def filter_img(tag):
             for child in tag.contents:
                 if child.name == 'img' or child.name == 'a':
                     return True
-        else:
-            return False
+        return False
     except KeyError:
         if 'style' in tag.attrs:
             return True
