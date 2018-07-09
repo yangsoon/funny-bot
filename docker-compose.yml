@@ -1,0 +1,6 @@
+version: "3"
+services: 
+  funny-bot:
+    build: ./
+  redis:
+    image: "redis:alpine"

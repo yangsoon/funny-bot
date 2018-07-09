@@ -129,19 +129,19 @@ async def download_photo(chat, imgs):
 
 
 async def get_fileid(key, page):
-    conn = await aioredis.create_connection(('localhost', 6379))
+    conn = await aioredis.create_connection(('redis', 6379))
     return await conn.execute('hget', key, page)
 
 
 async def store_fileid(fileid, key, page, nexe):
-    conn = await aioredis.create_connection(('localhost', 6379))
+    conn = await aioredis.create_connection(('redis', 6379))
     img_page = dict(imgs=fileid, nexe=nexe)
     await conn.execute('hset', key, page, str(img_page))
     logging.info(f'{key}-{page} stored')
 
 
 async def log_users(message):
-    conn = await aioredis.create_connection(('localhost', 6379))
+    conn = await aioredis.create_connection(('redis', 6379))
     await conn.execute('sadd', 'users', str(message['result']['chat']))
     number = await conn.execute('scard', 'users')
     logging.info(f'add a new user! there are {number} users')

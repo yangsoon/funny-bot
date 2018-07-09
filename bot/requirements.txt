@@ -1,0 +1,5 @@
+aiohttp==3.2.1
+aiotg==0.9.9
+aioredis==1.1.0
+beautifulsoup4==4.6.0
+lxml==4.2.1
