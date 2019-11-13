@@ -6,7 +6,7 @@
 
 
 如果读者之前对telegram的bot没有了解，可以查看这篇
-[写给开发者的telegram-bots介绍文档](https://github.com/yangsoon/Blog/issues/3)
+[写给开发者的telegram-bots介绍文档](https://yangsoon.github.io/#/posts/21)
 
 
 ## aiotg简单教程
