@@ -1,5 +1,7 @@
 ## telegram-bot
 
+部署前请看 https://github.com/yangsoon/funny-bot/issues/2
+
 [aiotg](http://stepan.xyz/aiotg/index.html) 可以通过异步调用telegram api的方式来构建bot，因为决定开发一个爬虫功能的bot，所以网络请求阻塞是比较严重的性能障碍。而asyncio的异步非阻塞特性能够完美的解决这一问题。这篇文章在记录如何使用aiotg进行telegram开发的同时，也会说明一些aiohttp的使用方法,这里是[项目源码](https://github.com/yangsoon/funny-bot)。
 
 <del>[https://t.me/fpicturebot](https://t.me/fpicturebot) 点击链接可以体验一下这个bot的功能。</del>
