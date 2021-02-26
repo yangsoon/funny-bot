@@ -1,4 +1,4 @@
-aiohttp==3.2.1
+aiohttp==3.7.4
 aiotg==0.9.9
 aioredis==1.1.0
 beautifulsoup4==4.6.0
